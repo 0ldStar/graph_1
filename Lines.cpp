@@ -1,50 +1,78 @@
 #include <QPainter>
-#include "lines.h"
 #include <iostream>
 #include <QWidget>
+#include <QTimer>
+#include <QKeyEvent>
+#include <windows.h>
+#include "Lines.h"
 
-#define COUNT 20
 
+Lines::Lines(int x1, int x2, int y1, int y2, int width, int height, int count)
+        : size{x1, x2, y1, y2, width, height, count} { flag = false; }
 
-Lines::Lines(int x1, int x2, int y1, int y2)
-        : X1(x1), X2(x2), Y1(y1), Y2(y2) {}
+void Lines::keyPressEvent(QKeyEvent *event) {
+
+    if (event->key() == Qt::Key_Escape) {
+        flag = !flag;
+        update();
+    }
+}
 
 void Lines::paintEvent(QPaintEvent *e) {
 
     Q_UNUSED(e);
-
     QPainter qp(this);
-    drawLines(&qp);
+    drawLines(qp);
+    std::cout << "-" << flag << std::endl;
+    if (flag) drawLines2(qp);
+    drawRealLine(size, qp);
+    drawGrid(size, qp);
+    drawAxes(size, qp);
 }
 
-void Lines::drawLines(QPainter *qp) {
+void Lines::drawLines2(QPainter &painter) {
+    painter.setBrush(QBrush(Qt::red));
+    painter.setPen(Qt::red);
+    drawCDA(size, painter);
+}
 
-    QPainter painter(this);
-    int width = this->width();
-    int height = this->height();
+void Lines::drawLines(QPainter &painter) {
+    painter.setBrush(QBrush(Qt::darkBlue));
+    painter.setPen(Qt::darkBlue);
+    drawBrezenham(size, painter);
+}
+
+void drawRealLine(sizes &size, QPainter &painter) {
     int x1, x2, y1, y2;
-    decardToDigital(X1, Y1, x1, y1, width, height);
-    decardToDigital(X2, Y2, x2, y2, width, height);
-    painter.setBrush(QBrush("#c50024"));
-    drawBrezenham(X1, Y1, X2, Y2, width, height, painter);
-    painter.setBrush(QBrush("#0000FF"));
-    drawCDA(X1, Y1, X2, Y2, width, height, painter);
+    painter.setBrush(QBrush(Qt::green));
+    painter.setPen(Qt::green);
+    decardToDigital(size.x1, size.y1, x1, y1, size.width, size.height);
+    decardToDigital(size.x2, size.y2, x2, y2, size.width, size.height);
     painter.drawLine(x1, y1, x2, y2);
+}
+
+void drawGrid(sizes &size, QPainter &painter) {
     painter.setPen(Qt::black);
     painter.setPen(Qt::DotLine);
-    for (int i = 0; i < COUNT; ++i) {
-        painter.drawLine(i / (float) COUNT * width, 0, i / (float) COUNT * width, height);
+    for (int i = 0; i < size.count; ++i) {
+        painter.drawLine((int) ((float) i / (float) size.count * (float) size.width), 0,
+                         (int) ((float) i / (float) size.count * (float) size.width),
+                         size.height);
     }
-    for (int i = 0; i < COUNT; ++i) {
-        painter.drawLine(0, i / (float) COUNT * height, width, i / (float) COUNT * height);
+    for (int i = 0; i < size.count; ++i) {
+        painter.drawLine(0, (int) ((float) i / (float) size.count * (float) size.height), size.width,
+                         (int) ((float) i / (float) size.count * (float) size.height));
     }
-    painter.setPen(Qt::red);
-    painter.drawLine(width / 2, 0, width / 2, height);
-    painter.drawLine(0, height / 2, width, height / 2);
-
-
 }
 
+void drawAxes(sizes &size, QPainter &painter) {
+    painter.setPen(Qt::red);
+    int dx = (int) ((float) size.width / 2);
+    int dy = (int) ((float) size.height / 2);
+
+    painter.drawLine(dx, 0, dx, size.height);
+    painter.drawLine(0, dy, size.width, dy);
+}
 
 int sign(double x) {
     if (x > 0) return 1;
@@ -53,96 +81,65 @@ int sign(double x) {
         return -1;
 }
 
-void drawPixel(int x, int y, int width, int height, QPainter &painter) {
-    double dx = width / (float) COUNT;
-    double dy = height / (float) COUNT;
-    painter.drawRect(x * dx, y * dy, dx, dy);
+void drawPixel(int x, int y, const sizes &size, QPainter &painter) {
+    double dx = (float) size.width / (float) size.count;
+    double dy = (float) size.height / (float) size.count;
+    painter.drawRect((int) ((int) (x / dx) * dx), (int) (((int) (y / dy) * dy)), (int) dx, (int) dy);
 }
 
-void drawCDA(int x1, int y1, int x2, int y2, int width, int height, QPainter &painter) {
+void drawCDA(const sizes &size, QPainter &painter) {
     double dx, dy, l, x, y;
     int _x, _y;
-    int i;
-    double dX = width / (float) COUNT;
-    double dY = height / (float) COUNT;
-    if (abs(x2 - x1) >= abs(y2 - y1)) l = abs(x2 - x1);
+    if (abs(size.x2 - size.x1) >= abs(size.y2 - size.y1)) l = abs(size.x2 - size.x1);
     else {
-        l = abs(y2 - y1);
+        l = abs(size.y2 - size.y1);
     }
-    dx = (x2 - x1) / l;
-    dy = (y2 - y1) / l;
+    dx = (size.x2 - size.x1) / l;
+    dy = (size.y2 - size.y1) / l;
 
-    x = x1 + 0.5 * sign(dx);
-    y = y1 + 0.5 * sign(dy);
-
-    i = 1;
-    while (i <= l) {
-        decardToDigital(floor(x), floor(y), _x, _y, width, height);
-        drawPixel(_x / (int) dX, _y / (int) dY, width, height, painter);
+    x = size.x1 + 0.5 * sign(dx);
+    y = size.y1 + 0.5 * sign(dy);
+    for (int i = 0; i < l; ++i) {
+        decardToDigital(floor(x), floor(y), _x, _y, size.width, size.height);
+        //drawPixel(_x / (int) dX, _y / (int) dY, size, painter);
+        drawPixel(_x, _y, size, painter);
         x = x + dx;
         y = y + dy;
-        i = i + 1;
     }
 }
 
-void drawBrezenham(int x0, int y0, int x1, int y1, int width, int height, QPainter &painter) {
+void drawBrezenham(const sizes &size, QPainter &painter) {
+    int a, b, e, dx, dy, sx, sy;
 
-    int a = 0, b = 0, e = 0, dx, dy, sx, sy;
-
-    int x = x0;
+    int x = size.x1;
     int _x, _y;
-    int y = y0;
-    double dX = width / (float) COUNT;
-    double dY = height / (float) COUNT;
-    dx = abs(x1 - x0);
-
-    dy = abs(y1 - y0);
-
-    if ((x1 - x0) >= 0) sx = 1;
+    int y = size.y1;
+    dx = abs(size.x2 - size.x1);
+    dy = abs(size.y2 - size.y1);
+    if ((size.x2 - size.x1) >= 0) sx = 1;
     else
         sx = -1;
-
-    if ((y1 - y0) >= 0) sy = 1;
-
+    if ((size.y2 - size.y1) >= 0) sy = 1;
     else sy = -1;
-
     if (dy > dx) {
-
         a = dx;
-
         dx = dy;
-
         dy = a;
-
         b = 1;
-
     } else b = 0;
-
     e = 2 * dy - dx;
-
     for (int i = 0; i != dx; i++) {
-        decardToDigital(x, y, _x, _y, width, height);
-        drawPixel(_x / (int) dX, _y / (int) dY, width, height, painter);
-
+        decardToDigital(x, y, _x, _y, size.width, size.height);
+        drawPixel(_x, _y, size, painter);
         while (e >= 0) {
-
             if (b == 1)x = x + sx;
-
             else y = y + sy;
-
             e = e - 2 * dx;
-
         }
-
         if (b == 1) y = y + sy;
-
         else x = x + sx;
-
         e = e + 2 * dy;
-
     }
-
-
 }
 
 void decardToDigital(int x, int y, int &X, int &Y, int width, int height) {
