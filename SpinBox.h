@@ -13,11 +13,14 @@ class SpinBox : public QWidget {
 
 Q_OBJECT
 
-public:
-    SpinBox(QWidget *parent = 0);
 
+public:
+    SpinBox(QWidget *parent = 0, int width = 0, int height = 0);
+    int getX1();
+    int getX2();
+    int getY1();
+    int getY2();
 private:
-    void dataReciewe();
     QSpinBox *spinbox1;
     QSpinBox *spinbox2;
     QSpinBox *spinbox3;

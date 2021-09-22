@@ -6,6 +6,7 @@
 #define UNTITLED14_LINES_H
 
 #include "sizes.h"
+#include "SpinBox.h"
 #include <QWidget>
 
 void drawCDA(const sizes &size, QPainter &painter);
@@ -38,11 +39,12 @@ protected:
 
     void drawLines2(QPainter &painter);
 
-    friend void dataReciew();
+    void updateDate();
 
 private:
     sizes size;
     bool flag;
+    SpinBox *spinBox;
 };
 
 #endif //UNTITLED14_LINES_H

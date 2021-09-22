@@ -5,9 +5,9 @@
 #include "Lines.h"
 #include "SpinBox.h"
 
-#define WIDTH 560
-#define HEIGHT 540
-#define COUNT 50
+#define WIDTH 800
+#define HEIGHT 600
+#define COUNT 20
 
 int main(int argc, char *argv[]) {
 
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     //Lines window(x1, x2, y1, y2, COUNT);
     window.resize(WIDTH, HEIGHT);
     window.setWindowTitle("Lines");
-    SpinBox box(&window);
+    //SpinBox box(&window);
     window.show();
     return a.exec();
     // }

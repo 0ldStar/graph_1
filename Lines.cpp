@@ -8,7 +8,10 @@
 
 
 Lines::Lines(int x1, int x2, int y1, int y2, int width, int height, int count)
-        : size{x1, x2, y1, y2, width, height, count} { flag = false; }
+        : size{x1, x2, y1, y2, width, height, count} {
+    spinBox = new SpinBox(this, width, height);
+    flag = false;
+}
 
 void Lines::keyPressEvent(QKeyEvent *event) {
 
@@ -21,6 +24,7 @@ void Lines::keyPressEvent(QKeyEvent *event) {
 void Lines::paintEvent(QPaintEvent *e) {
 
     Q_UNUSED(e);
+    updateDate();
     QPainter qp(this);
     drawLines(qp);
     std::cout << "-" << flag << std::endl;
@@ -28,6 +32,13 @@ void Lines::paintEvent(QPaintEvent *e) {
     drawRealLine(size, qp);
     drawGrid(size, qp);
     drawAxes(size, qp);
+}
+
+void Lines::updateDate() {
+    size.x1 = spinBox->getX1();
+    size.x2 = spinBox->getX2();
+    size.y1 = spinBox->getY1();
+    size.y2 = spinBox->getY2();
 }
 
 void Lines::drawLines2(QPainter &painter) {
